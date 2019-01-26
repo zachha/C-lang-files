@@ -39,7 +39,6 @@ void validateKey(string key) {
 void getMessage(int validKey) {
     string message = get_string("plaintext: ");
     int messageLength = strlen(message);
-    printf("ciphertext: %s\n", message);
     encryptMessage(messageLength, message, validKey);
 }
 
@@ -49,23 +48,22 @@ void encryptMessage(int length, string message, int validKey) {
         // checks each char to make sure it's alphabetic before converting it
         if(isalpha(letter)) {
             int encryptedLetter = ((int) letter) + validKey;
-            printf("%i\n", encryptedLetter);
             if(islower(letter)) {
-                convertLowercase(encryptedLetter);
+                message[x] = convertLowercase(encryptedLetter);
             } else {
-                convertUppercase(encryptedLetter);
+                message[x] = convertUppercase(encryptedLetter);
             }
-            printf("Encrypted letter: %c\n", (char) encryptedLetter);
         }    
-        //encryptMessage(message chars)
-        // lowercase a = 097 z = 122 uppercase A = 065 Z = 090
     }
+    printf("ciphertext: %s\n", message);
 }
 
+// ASCII:  lowercase a = 097 z = 122 uppercase A = 065 Z = 090
+// these two functions start from a in the alphabet if the ascii number goes past z
 int convertLowercase(int encryptedLetter) {
     if(encryptedLetter > 122) {
         encryptedLetter = 96 + (encryptedLetter - 122);
-        printf("checking: %i\n", encryptedLetter);
+        //printf("checking: %i %c\n", encryptedLetter, encryptedLetter);
         return encryptedLetter;
     } else {
         return encryptedLetter;
@@ -75,7 +73,7 @@ int convertLowercase(int encryptedLetter) {
 int convertUppercase(int encryptedLetter) {
     if(encryptedLetter > 90) {
         encryptedLetter = 64 + (encryptedLetter - 90);
-        printf("checking: %i\n", encryptedLetter);
+        //printf("checking: %i %c\n", encryptedLetter, encryptedLetter);
         return encryptedLetter;
     } else {
         return encryptedLetter;
