@@ -7,9 +7,9 @@
 // declaring functions
 void validateKeyword(string keyword);
 string getShiftValues(string rawKeyword);
-void getMessage(int validKeyword);
-int relateShiftValues(string validKeyword);
-void encryptMessage(int length, string message, int validKeyword);
+void getMessage(string validKeyword);
+int relateShiftValues(string validKeyword, string message, int x);
+void encryptMessage(int length, string message, string validKeyword);
 int convertLowercase(int encryptedLetter);
 int convertUppercase(int encryptedLetter);
 
@@ -20,7 +20,7 @@ int main(int argc, string argv[])
     } else {
         validateKeyword(argv[1]);
         string validKeyword = getShiftValues(argv[1]);
-        //getMessage(validKeyword);   
+        getMessage(validKeyword);   
     }
 }
 
@@ -41,27 +41,27 @@ string getShiftValues(string rawKeyword) {
     string validKeyword = rawKeyword;
     for(int o=0; o<rawLength; o++) {
         if(islower(validKeyword[o])) {
-            validKeyword[o] -= 97;
-            printf("Check: %i\n", validKeyword[o]);
+            // these values are one int MORE than they should be because if a is 0, it isn't counted as a value in the string array and can mess up later functions, so 1 will be subtracted in the encryptMessage function to revert it to the 'real' shift value
+            validKeyword[o] -= 96;
         } else {
-            validKeyword[o] -= 65;
-            printf("Check: %i\n", validKeyword[o]);
+            validKeyword[o] -= 64;
         }
     }
     return validKeyword;
 }
 
 // Asks the user for input then 'encrypts' the message by adding the key to the ASCII value and prints it back out to user as a string
-void getMessage(int validKeyword) {
+void getMessage(string validKeyword) {
     string message = get_string("plaintext: ");
     int messageLength = strlen(message);
     encryptMessage(messageLength, message, validKeyword);
 }
 
 // this should relate every char in the plain text to it's appropriate char in the keyword
-int relateShiftValues(string validKeyword) {
-    if (strlen(validKeyword) > 1) {
-        int keywordIndex = plaintext[i] % (strlen(validKeyword) - 1);
+int relateShiftValues(string validKeyword, string message, int x) {
+    int keywordLength = strlen(validKeyword);
+    if (keywordLength > 1) {
+        int keywordIndex = x % strlen(validKeyword);
         return keywordIndex;
     } else {
         int keywordIndex = 0;
@@ -70,18 +70,23 @@ int relateShiftValues(string validKeyword) {
 }
  
     
-void encryptMessage(int length, string message, int validKeyword) {
+void encryptMessage(int length, string message, string validKeyword) {
+    // counter keeps track of the alphabetic message chars to make sure the keyword continues to shift in order through the message even if the message has spaces or non alphabetic characters
+    int counter = 0;
     for (int x=0; x<length; x++) {
         char letter = message[x];
         // checks each char to make sure it's alphabetic before converting it
         if(isalpha(letter)) {
-            int encryptedLetter = ((int) letter) + validKeyword;
+            int letterRelation = relateShiftValues(validKeyword, message, counter);
+            // 1 is subtracted from each char in validKeyword b/c 1 was added in the getShiftValues function
+            int encryptedLetter = ((int) letter) + (validKeyword[letterRelation] - 1);
+            counter ++;
             if(islower(letter)) {
                 message[x] = convertLowercase(encryptedLetter);
             } else {
                 message[x] = convertUppercase(encryptedLetter);
             }
-        }    
+        }
     }
     printf("ciphertext: %s\n", message);
 }
