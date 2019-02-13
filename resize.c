@@ -7,16 +7,15 @@
 
 int main(int argc, char *argv[])
 {
+    // converts the user's n into an int so we know what to multiply the pixels by
+    int factor = atoi(argv[1]);
     // ensure proper usage
-    if (argc != 3)
+    if (argc != 4 || (factor < 1 || factor > 100))
     {
-        fprintf(stderr, "Usage: copy infile outfile\n");
+        fprintf(stderr, "Usage: ./resize n infile outfile\n factor= %i\n", factor);
         return 1;
     }
 
-    // remember filenames
-    char *infile = argv[1];
-    char *outfile = argv[2];
 
     // open input file
     FILE *inptr = fopen(infile, "r");
