@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     // ensure proper usage
     if (argc != 4 || (factor < 1 || factor > 100))
     {
-        fprintf(stderr, "Usage: ./resize n infile outfile\n factor= %i\n", factor);
+        fprintf(stderr, "Usage: ./resize n infile outfile\n");
         return 1;
     }
 
@@ -54,34 +54,38 @@ int main(int argc, char *argv[])
         return 4;
     }
     
+    // defining new struct variables to write to the output file
+    BITMAPINFOHEADER out_bi = bi;
+    BITMAPFILEHEADER out_bf = bf;
+    
     // determine padding that was in the file to be copied (old padding)
     int oldPadding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
     
     // changing our header variables based on the multiplication factor
-    bi.biWidth *= factor;
-    bi.biHeight *= factor;
+    out_bi.biWidth = bi.biWidth * factor;
+    out_bi.biHeight = bi.biHeight * factor;
     
     // determine new padding to be used in the scanlines of the new file (new padding)
-    int newPadding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    int newPadding = (4 - (out_bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
     
     // change the image size and file size according to what the new size will be after the pixels are factored by n
-    bi.biSizeImage = (bi.biWidth * abs(bi.biHeight) * sizeof(RGBTRIPLE)) + (newPadding * abs(bi.biHeight));
-    bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+    out_bi.biSizeImage = (out_bi.biWidth * abs(out_bi.biHeight) * sizeof(RGBTRIPLE)) + (newPadding * abs(out_bi.biHeight));
+    out_bf.bfSize = out_bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
 
     // write outfile's BITMAPFILEHEADER
-    fwrite(&bf, sizeof(BITMAPFILEHEADER), 1, outptr);
+    fwrite(&out_bf, sizeof(BITMAPFILEHEADER), 1, outptr);
 
     // write outfile's BITMAPINFOHEADER
-    fwrite(&bi, sizeof(BITMAPINFOHEADER), 1, outptr);
+    fwrite(&out_bi, sizeof(BITMAPINFOHEADER), 1, outptr);
     
     // iterate over infile's scanlines
-    for (int i = 0, biHeight = (abs(bi.biHeight) / factor); i < biHeight; i++)
+    for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
     {
+        // initialize counter used for keeping track of how many rows to duplicate
         int counter = 0;
-        printf("NEW PADDING: %i\n FACTOR: %i\n", newPadding, factor);
         do {
             // iterate over pixels in scanline
-            for (int j = 0; j < (bi.biWidth / factor); j++)
+            for (int j = 0; j < bi.biWidth; j++)
             {
                 // temporary storage
                 RGBTRIPLE triple;
@@ -102,13 +106,13 @@ int main(int argc, char *argv[])
                 fputc(0x00, outptr);
             }
             // reverses the file seek pointer back to the same line so the loop can continue to write lines to resize
-            fseek(inptr, -((bi.biWidth / factor) * sizeof(RGBTRIPLE)), SEEK_CUR);
+            fseek(inptr, -(bi.biWidth * sizeof(RGBTRIPLE)), SEEK_CUR);
             // increment counter
             counter ++;
         } while (counter < factor);
      
         // skip over the old padding, if any in the input file
-        fseek(inptr, oldPadding, SEEK_CUR);
+        fseek(inptr, ((bi.biWidth * sizeof(RGBTRIPLE)) + oldPadding), SEEK_CUR);
         // reset counter back to 0 for next 'new' row to resize if there is one
         counter = 0;
     }
