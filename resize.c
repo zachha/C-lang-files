@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
     int newPadding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
     
     // change the image size and file size according to what the new size will be after the pixels are factored by n
-    bi.biSizeImage = (bi.biWidth * abs(bi.biHeight) * sizeOf(RGBTRIPLE)) + (newPadding * abs(bi.biHeight) * sizeOf(char));
-    bf.bfSize = bi.biSizeImage + sizeOf(BITMAPFILEHEADER) + sizeOf(BITMAPINFOHEADER);
+    bi.biSizeImage = (bi.biWidth * abs(bi.biHeight) * sizeof(RGBTRIPLE)) + (newPadding * abs(bi.biHeight));
+    bf.bfSize = bi.biSizeImage + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
 
     // write outfile's BITMAPFILEHEADER
     fwrite(&bf, sizeof(BITMAPFILEHEADER), 1, outptr);
@@ -74,40 +74,43 @@ int main(int argc, char *argv[])
     // write outfile's BITMAPINFOHEADER
     fwrite(&bi, sizeof(BITMAPINFOHEADER), 1, outptr);
     
-    // figures out if padding needs to be added or deleted in the output file
-    int addPadding = NULL;
-    int deletePadding = NULL;
-    
-    if (oldPadding <= newPadding) {
-        addPadding = newPadding - oldPadding;
-    } else {
-        deletePadding = oldPadding - newPadding; 
-    }
-    
-
     // iterate over infile's scanlines
-    for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
+    for (int i = 0, biHeight = (abs(bi.biHeight) / factor); i < biHeight; i++)
     {
-        // iterate over pixels in scanline
-        for (int j = 0; j < bi.biWidth; j++)
-        {
-            // temporary storage
-            RGBTRIPLE triple;
+        int counter = 0;
+        printf("NEW PADDING: %i\n FACTOR: %i\n", newPadding, factor);
+        do {
+            // iterate over pixels in scanline
+            for (int j = 0; j < (bi.biWidth / factor); j++)
+            {
+                // temporary storage
+                RGBTRIPLE triple;
 
-            // read RGB triple from infile
-            fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
+                // read RGB triple from infile
+                fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
+                
+                // write appropriate amount of pixels to outfile to resize horizontally
+                for (int k = 0; k < factor; k++) 
+                {
+                    fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr); 
+                }
+            }
 
-            // write RGB triple to outfile
-            fwrite(&triple, sizeof(RGBTRIPLE), factor, outptr);
-        }
-
-        // then add the necessary bytes of padding
-        for (int k = 0; k < addPadding; k++) {
+            // then add the necessary bytes of padding
+            for (int l = 0; l < newPadding; l++) 
+            {
                 fputc(0x00, outptr);
-            } 
-            
+            }
+            // reverses the file seek pointer back to the same line so the loop can continue to write lines to resize
+            fseek(inptr, -((bi.biWidth / factor) * sizeof(RGBTRIPLE)), SEEK_CUR);
+            // increment counter
+            counter ++;
+        } while (counter < factor);
+     
         // skip over the old padding, if any in the input file
         fseek(inptr, oldPadding, SEEK_CUR);
+        // reset counter back to 0 for next 'new' row to resize if there is one
+        counter = 0;
     }
 
     // close infile
