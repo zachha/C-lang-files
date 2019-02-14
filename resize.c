@@ -7,7 +7,6 @@
 
 int main(int argc, char *argv[])
 {
-    // converts the user's n into an int so we know what to multiply the pixels by
     int factor = atoi(argv[1]);
     // ensure proper usage
     if (argc != 4 || (factor < 1 || factor > 100))
@@ -16,6 +15,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // remember filenames
+    char *infile = argv[2];
+    char *outfile = argv[3];
 
     // open input file
     FILE *inptr = fopen(infile, "r");
@@ -51,15 +53,37 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Unsupported file format.\n");
         return 4;
     }
+    
+    // determine padding that was in the file to be copied (old padding)
+    int oldPadding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    
+    // changing our header variables based on the multiplication factor
+    bi.biWidth *= factor;
+    bi.biHeight *= factor;
+    
+    // determine new padding to be used in the scanlines of the new file (new padding)
+    int newPadding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    
+    // change the image size and file size according to what the new size will be after the pixels are factored by n
+    bi.biSizeImage = (bi.biWidth * bi.biHeight) + padding;
+    bf.bfSize = bi.biSizeImage + sizeOf(BITMAPFILEHEADER) + sizeOf(BITMAPINFOHEADER);
 
     // write outfile's BITMAPFILEHEADER
     fwrite(&bf, sizeof(BITMAPFILEHEADER), 1, outptr);
 
     // write outfile's BITMAPINFOHEADER
     fwrite(&bi, sizeof(BITMAPINFOHEADER), 1, outptr);
-
-    // determine padding for scanlines
-    int padding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
+    
+    // figures out if padding needs to be added or deleted in the output file
+    int addPadding = NULL;
+    int deletePadding = NULL;
+    
+    if (oldPadding <= newPadding) {
+        addPadding = newPadding - oldPadding;
+    } else {
+        deletePadding = oldPadding - newPadding; 
+    }
+    
 
     // iterate over infile's scanlines
     for (int i = 0, biHeight = abs(bi.biHeight); i < biHeight; i++)
