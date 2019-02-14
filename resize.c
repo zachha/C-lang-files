@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     int newPadding = (4 - (bi.biWidth * sizeof(RGBTRIPLE)) % 4) % 4;
     
     // change the image size and file size according to what the new size will be after the pixels are factored by n
-    bi.biSizeImage = (bi.biWidth * bi.biHeight) + padding;
+    bi.biSizeImage = (bi.biWidth * abs(bi.biHeight) * sizeOf(RGBTRIPLE)) + (newPadding * abs(bi.biHeight) * sizeOf(char));
     bf.bfSize = bi.biSizeImage + sizeOf(BITMAPFILEHEADER) + sizeOf(BITMAPINFOHEADER);
 
     // write outfile's BITMAPFILEHEADER
@@ -98,17 +98,16 @@ int main(int argc, char *argv[])
             fread(&triple, sizeof(RGBTRIPLE), 1, inptr);
 
             // write RGB triple to outfile
-            fwrite(&triple, sizeof(RGBTRIPLE), 1, outptr);
+            fwrite(&triple, sizeof(RGBTRIPLE), factor, outptr);
         }
 
-        // skip over padding, if any
-        fseek(inptr, padding, SEEK_CUR);
-
-        // then add it back (to demonstrate how)
-        for (int k = 0; k < padding; k++)
-        {
-            fputc(0x00, outptr);
-        }
+        // then add the necessary bytes of padding
+        for (int k = 0; k < addPadding; k++) {
+                fputc(0x00, outptr);
+            } 
+            
+        // skip over the old padding, if any in the input file
+        fseek(inptr, oldPadding, SEEK_CUR);
     }
 
     // close infile
