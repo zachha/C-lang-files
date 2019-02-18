@@ -17,11 +17,11 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Could not open %s.\n", argv[1]);
         return 2;
     }
+    int buffer;
+    int picCount = 0;
     
-    // start reading the image file by 512 bytes
-    int checkForEOF = fread(buffer, 512, 1, inptr);
-    
-    if (checkForEOF != 512) 
+    // loops through the raw file to look for JPEGS and writes the JPEG files for those it finds
+    while (fread(&buffer, 512, 1, inptr) == 512) 
     {
         // check the first 4 bytes of each 512 byte block for JPEG headers
         if (buffer[0] == 0xff &&
@@ -29,19 +29,19 @@ int main(int argc, char *argv[])
             buffer[2] == 0xff &&
             (buffer[3] & 0xf0) == 0xe0)
         {
-            int picCount = 0;
-            sprintf(filename, "%03i.jpg", picCount);
-            FILE *img = fopen(filename, "w");
             // for creating outfiles for jpegs
-            //char *outfile = "";
-        } else {
-            fread(buffer, 512, 1, inptr);
-    } else {
-        // if checkForEOF is not 512, that means we have reached the end of file so we should terminate the program
-        fclose(inputr);
+            sprintf(filename, "%03i.jpg", picCount);
+            //char *outfile = filename;
+            FILE *img = fopen(filename, "w");
+            fwrite(&buffer, 512, 1, img);
+            fclose(img);
+            picCount++;
+        } 
+    } 
+    
+    // if checkForEOF is not 512, that means we have reached the end of file so we should terminate the program
+    fclose(inputr);
         
-        // program success
-        return 0;
-
-    }
+    // program success
+    return 0;
 }
